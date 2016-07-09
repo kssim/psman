@@ -1,9 +1,13 @@
 import subprocess
+import os.path
 from collections import namedtuple
+
+PROCESS_STAT_PATH = '/proc/%s/stat'
 
 class Psman(object):
 
 	pid = -1
+	stat_data = None
 	stat_file_field = ['p_name', 'p_status', 'ppid', 'pgrp', 'session', 'tty_nr', 'tpgid',
 					'flags', 'minflt', 'cminflt', 'majflt', 'cmajflt', 'utime', 'stime',
 					'cutime', 'cstime', 'priority', 'nice', 'num_threads', 'itrealvalue',
@@ -16,7 +20,7 @@ class Psman(object):
 
 	def __init__(self, pinfo):
 		self.pid = self.get_pid(pinfo) if type(pinfo) is str else pinfo
-		self.stat_file_field = self.get_process_info()
+		self.stat_data = self.get_process_info()
 
 
 	## Inner method
@@ -30,21 +34,30 @@ class Psman(object):
 			return process_id
 
 	def get_process_info(self):
-		with open('/proc/%s/stat' % self.pid, 'rb') as f:
+		if self.pid == -1:
+			return None
+
+		stat_path = PROCESS_STAT_PATH % self.pid
+		if os.path.exists(stat_path) == False:
+			return None
+
+		with open(stat_path, 'rb') as f:
 			values = f.readline().split()[1:]
 
 		return namedtuple('ProcessData', self.stat_file_field)._make(tuple(values))
 
 
 	## Outer method
+	def check_process_data(self):
+		return stat_data
+
 	def get_process_name(self):
-		return self.stat_file_field.p_name
+		return self.stat_data.p_name
 
 	def print_process_info(self):
-		print ('name : %s' % self.stat_file_field.p_name)
+		print ('name : %s' % self.stat_data.p_name)
 		print ('pid : %s' % self.pid)
-		print ('state : %s' % self.stat_file_field.p_status)
-		print ('parent pid : %s' % self.stat_file_field.ppid)
-		print ('process group id : %s' % self.stat_file_field.pgrp)
-		print ('process session id : %s' % self.stat_file_field.session)
-
+		print ('state : %s' % self.stat_data.p_status)
+		print ('parent pid : %s' % self.stat_data.ppid)
+		print ('process group id : %s' % self.stat_data.pgrp)
+		print ('process session id : %s' % self.stat_data.session)
