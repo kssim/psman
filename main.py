@@ -33,8 +33,7 @@ def main():
 	if options.show_process_info == True:
 		p.print_process_info()
 	else:
-		print ('process name : %s' % p.get_process_name())
-		print ('process id : %s' % p.pid)
+		p.print_brief_process_info()
 
 
 if __name__ == '__main__':
