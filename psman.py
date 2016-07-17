@@ -1,12 +1,16 @@
 import subprocess
 import os.path
+import time
 from collections import namedtuple
 
 PROCESS_STAT_PATH = '/proc/%s/stat'
+PROCESS_CMDLINE_PATH = '/proc/%s/cmdline'
 
 class Psman(object):
 
+    process_check_interval = 10
     pid = []
+    process_cmdline = []
     stat_data = []
     stat_file_field = ['p_name', 'p_status', 'ppid', 'pgrp', 'session', 'tty_nr', 'tpgid',
                     'flags', 'minflt', 'cminflt', 'majflt', 'cmajflt', 'utime', 'stime',
@@ -25,6 +29,7 @@ class Psman(object):
             self.pid.append(pinfo)
 
         self.set_process_info()
+        self.set_process_cmdline()
 
 
     ## Inner method
@@ -48,16 +53,58 @@ class Psman(object):
 
             self.stat_data.append(namedtuple('ProcessData', self.stat_file_field)._make(tuple(values)))
 
+    def set_process_cmdline(self):
+        for pid in self.pid:
+            cmdline_path = PROCESS_CMDLINE_PATH % pid
+            if os.path.exists(cmdline_path) == False:
+                continue
+
+            with open(cmdline_path, 'rb') as f:
+                self.process_cmdline.append(f.readline().replace('\0', ' '))
+
+    def update_process_info(self):
+        return self.set_process_info()
+
+    def restart_process(self):
+        for process in self.process_cmdline:
+            print (process)
+            arguments = process.split(' ')
+            subprocess.Popen(arguments)
+
 
     ## Outer method
-    def check_process_data(self):
-        return len(stat_data)
+    def exist_process_info(self):
+        return False if len(self.stat_data) == 0 else True
+
+    def set_process_check_interval(self, interval):
+        self.process_check_interval = interval
+
+    def check_process(self, recursive_start):
+        while True:
+            for i, data in enumerate(self.stat_data):
+                print ('\'%s(%s)\' process status is \'%s\'.' % (data.p_name, self.pid[i], data.p_status))
+
+            time.sleep(self.process_check_interval)
+#           Not implemented.
+#            update_result = self.update_process_info()
+#
+#            if update_result == True:
+#                continue
+#
+#            if recursive_start == None or recursive_start == False:
+#                print ('Process died.')
+#                break
+#
+#            self.restart_process()
 
     def print_brief_process_info(self):
         for i, data in enumerate(self.stat_data):
+            print ('=================================================================================================')
             print ('Name : %s' % data.p_name)
             print ('Pid : %s' % self.pid[i])
             print ('State : %s' % data.p_status)
+            print ('cmdline : %s' % self.process_cmdline[i])
+            print ('=================================================================================================')
 
     def print_process_info(self):
         for i, data in enumerate(self.stat_data):
@@ -65,6 +112,7 @@ class Psman(object):
             print ('Name : %s' % data.p_name)
             print ('Pid : %s' % self.pid[i])
             print ('State : %s' % data.p_status)
+            print ('cmdline : %s' % self.process_cmdline[i])
             print ('Parent pid : %s' % data.ppid)
             print ('Process group id : %s' % data.pgrp)
             print ('Process session id : %s' % data.session)
