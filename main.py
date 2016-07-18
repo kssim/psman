@@ -39,7 +39,6 @@ def main():
     if options.show_process_info == True:
         p.print_process_info()
     elif options.checked == True:
-        print (options.recursive_start)
         p.check_process(options.recursive_start)
     else:
         p.print_brief_process_info()

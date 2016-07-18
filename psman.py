@@ -43,7 +43,7 @@ class Psman(object):
             return process_id
 
     def set_process_info(self):
-        for pid in self.pid:
+        for i, pid in enumerate(self.pid):
             stat_path = PROCESS_STAT_PATH % pid
             if os.path.exists(stat_path) == False:
                 continue
@@ -62,14 +62,27 @@ class Psman(object):
             with open(cmdline_path, 'rb') as f:
                 self.process_cmdline.append(f.readline().replace('\0', ' '))
 
-    def update_process_info(self):
-        return self.set_process_info()
+    def update_process_info(self, index, process_name):
+        stat_path = PROCESS_STAT_PATH % self.pid[index]
+        if os.path.exists(stat_path) == False:
+            return False
 
-    def restart_process(self):
-        for process in self.process_cmdline:
-            print (process)
-            arguments = process.split(' ')
-            subprocess.Popen(arguments)
+        with open(stat_path, 'rb') as f:
+            values = f.readline().split()[1:]
+
+        self.stat_data[index] = namedtuple('ProcessData', self.stat_file_field)._make(tuple(values))
+        return True
+
+    def restart_process(self, index):
+        print ('Restart process')
+        pid = subprocess.Popen(self.process_cmdline[index].split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT).pid
+        self.pid[index] = pid
+
+    def delete_dead_process(self, index):
+        self.stat_data.pop(index)
+        self.pid.pop(index)
+        self.process_cmdline.pop(index)
+
 
 
     ## Outer method
@@ -80,22 +93,29 @@ class Psman(object):
         self.process_check_interval = interval
 
     def check_process(self, recursive_start):
+        print ('Start check process...')
+
         while True:
             for i, data in enumerate(self.stat_data):
                 print ('\'%s(%s)\' process status is \'%s\'.' % (data.p_name, self.pid[i], data.p_status))
+                update_result = self.update_process_info(i, data.p_name)
+
+                if update_result == True:
+                    continue
+
+                if recursive_start == None or recursive_start == False:
+                    print ('Process%s died.' % data.p_name)
+                    self.delete_dead_process(i)
+                    continue
+
+                self.restart_process(i)
+
+            if len(self.stat_data) == 0:
+                break
 
             time.sleep(self.process_check_interval)
-#           Not implemented.
-#            update_result = self.update_process_info()
-#
-#            if update_result == True:
-#                continue
-#
-#            if recursive_start == None or recursive_start == False:
-#                print ('Process died.')
-#                break
-#
-#            self.restart_process()
+
+        print ('Stop check process...')
 
     def print_brief_process_info(self):
         for i, data in enumerate(self.stat_data):
