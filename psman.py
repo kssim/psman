@@ -2,6 +2,7 @@ import subprocess
 import os.path
 import time
 from collections import namedtuple
+from utils import Logger
 
 PROCESS_STAT_PATH = '/proc/%s/stat'
 PROCESS_CMDLINE_PATH = '/proc/%s/cmdline'
@@ -93,7 +94,7 @@ class Psman(object):
         self.process_check_interval = interval
 
     def check_process(self, recursive_start):
-        print ('Start check process...')
+        Logger().psman_log('Start check process...')
 
         while True:
             for i, data in enumerate(self.stat_data):
@@ -115,7 +116,7 @@ class Psman(object):
 
             time.sleep(self.process_check_interval)
 
-        print ('Stop check process...')
+        Logger().psman_log('Stop check process...')
 
     def print_brief_process_info(self):
         for i, data in enumerate(self.stat_data):
