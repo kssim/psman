@@ -1,3 +1,6 @@
+import signal
+import sys
+
 class _Singleton(type):
 
     _instances = {}
@@ -22,3 +25,16 @@ class Logger(Singleton):
 
     def set_verbose_mode(self, mode):
         self.verbose_mode = True if mode == True else False
+
+
+
+
+class Signal(Singleton):
+
+    def sigint_handler(self, signal, frame):
+        Logger().psman_log('You pressed \'Ctrl+C\'')
+        print ('Psman is terminated.')
+        sys.exit(0)
+
+    def set_signal(self):
+        signal.signal(signal.SIGINT, self.sigint_handler)

@@ -2,8 +2,9 @@
 
 import sys
 from psman import Psman
-from optparse import OptionParser
 from utils import Logger
+from utils import Signal
+from optparse import OptionParser
 
 def main():
     parser = OptionParser('Usage: %prog -n <process name>')
@@ -33,6 +34,8 @@ def main():
     if p.exist_process_info() == False:
         print ('There is no process data.')
         exit(1)
+
+    Signal().set_signal()
 
     if options.interval is not None:
         p.set_process_check_interval(options.interval)
